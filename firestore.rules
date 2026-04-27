@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function belongsToFamily(familyId) {
+      return isAuthenticated() && request.auth.uid == familyId;
+    }
+    
+    // Users collection - private to user
+    match /users/{userId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Children collection - private to family
+    match /children/{childId} {
+      allow read, write: if isAuthenticated() && belongsToFamily(resource.data.familyId);
+      allow create: if isAuthenticated() && belongsToFamily(request.resource.data.familyId);
+    }
+    
+    // Chores collection - private to family
+    match /chores/{choreId} {
+      allow read, write: if isAuthenticated() && belongsToFamily(resource.data.familyId);
+      allow create: if isAuthenticated() && belongsToFamily(request.resource.data.familyId);
+    }
+    
+    // Rewards collection - private to family
+    match /rewards/{rewardId} {
+      allow read, write: if isAuthenticated() && belongsToFamily(resource.data.familyId);
+      allow create: if isAuthenticated() && belongsToFamily(request.resource.data.familyId);
+    }
+  }
+}
