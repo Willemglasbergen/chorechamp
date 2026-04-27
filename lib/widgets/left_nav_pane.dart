@@ -108,6 +108,118 @@ class LeftNavPane extends StatelessWidget {
   }
 }
 
+/// Mobile navigation drawer — always expanded, closes on navigate.
+class NavDrawer extends StatelessWidget {
+  const NavDrawer({
+    super.key,
+    required this.current,
+    required this.isKidsMode,
+    this.userEmail = '',
+    this.onAccountPressed,
+  });
+
+  final LeftNavItem current;
+  final bool isKidsMode;
+  final String userEmail;
+  final VoidCallback? onAccountPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
+            colors: [Color(0xFF2B7DE1), Color(0xFF59A1F7)],
+            stops: [0.39, 0.8],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Text(
+                    'ChoreChamp',
+                    style: const TextStyle(
+                      color: LightModeColors.lightOnPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _NavItemRow(
+                  icon: Icons.check_circle_outline,
+                  label: 'Taken',
+                  selected: current == LeftNavItem.chores,
+                  showLabel: true,
+                  onTap: current == LeftNavItem.chores
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pushReplacementNamed(RouteNames.chores);
+                        },
+                ),
+                _NavItemRow(
+                  icon: Icons.emoji_events_outlined,
+                  label: 'Beloningen',
+                  selected: current == LeftNavItem.rewards,
+                  showLabel: true,
+                  onTap: current == LeftNavItem.rewards
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pushReplacementNamed(RouteNames.rewards);
+                        },
+                ),
+                if (!isKidsMode)
+                  _NavItemRow(
+                    icon: Icons.family_restroom_outlined,
+                    label: 'Familie',
+                    selected: current == LeftNavItem.family,
+                    showLabel: true,
+                    onTap: current == LeftNavItem.family
+                        ? null
+                        : () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pushReplacementNamed(RouteNames.family);
+                          },
+                  ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: HiddenWhenKidsMode(
+                    child: _AccountButton(
+                      showLabel: userEmail.isNotEmpty,
+                      label: userEmail,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        if (onAccountPressed != null) {
+                          onAccountPressed!();
+                        } else {
+                          Navigator.of(context).pushReplacementNamed(RouteNames.family);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NavItemRow extends StatelessWidget {
   const _NavItemRow({required this.icon, required this.label, required this.selected, required this.showLabel, this.onTap});
 

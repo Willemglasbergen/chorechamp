@@ -5,7 +5,9 @@ import 'package:chorechamp2/core/utils/kids_mode_notifier.dart';
 import 'package:chorechamp2/widgets/hidden_when_kids_mode.dart';
 
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
-  const AppTopBar({super.key});
+  const AppTopBar({super.key, this.showMenuButton = false});
+
+  final bool showMenuButton;
 
   @override
   Size get preferredSize => const Size.fromHeight(48);
@@ -30,13 +32,23 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         child: Row(
           children: [
+            // Builder gives a context below the Scaffold so Scaffold.of() resolves correctly.
+            if (showMenuButton)
+              Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  color: Theme.of(ctx).colorScheme.primary,
+                  tooltip: 'Menu',
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                ),
+              ),
             _Logo(accent: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             const _BrandTitle(),
             const Spacer(),
-            Padding(padding: EdgeInsets.all(8), child: const _KidsModeToggle()),
+            Padding(padding: const EdgeInsets.all(8), child: const _KidsModeToggle()),
             Padding(
-              padding: EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8),
               child: HiddenWhenKidsMode(
                 child: IconButton(
                   tooltip: 'Logout',

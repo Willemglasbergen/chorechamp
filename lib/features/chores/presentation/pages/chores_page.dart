@@ -1,5 +1,6 @@
 import 'package:chorechamp2/core/utils/format.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:confetti/confetti.dart';
 import 'package:chorechamp2/data/models/child.dart';
 import 'package:chorechamp2/data/models/chore.dart';
@@ -101,8 +102,12 @@ class _ChoresPageState extends State<ChoresPage> {
   @override
   Widget build(BuildContext context) {
     final isKidsMode = _kidsModeNotifier.isKidsMode;
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
     return Scaffold(
-      appBar: const AppTopBar(),
+      appBar: AppTopBar(showMenuButton: isMobile),
+      drawer: isMobile
+          ? NavDrawer(current: LeftNavItem.chores, isKidsMode: isKidsMode)
+          : null,
       backgroundColor: Colors.white,
       floatingActionButton: (_familyId != null && !isKidsMode)
           ? FloatingActionButton(
@@ -128,10 +133,11 @@ class _ChoresPageState extends State<ChoresPage> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LeftNavPane(
-              current: LeftNavItem.chores,
-              isKidsMode: isKidsMode,
-              userEmail: ''),
+          if (!isMobile)
+            LeftNavPane(
+                current: LeftNavItem.chores,
+                isKidsMode: isKidsMode,
+                userEmail: ''),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -371,6 +377,8 @@ class _ChoreRow extends StatefulWidget {
 
 class _ChoreRowState extends State<_ChoreRow> {
   late final ConfettiController _confettiController;
+  double _dragOffset = 0.0;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -442,7 +450,7 @@ class _ChoreRowState extends State<_ChoreRow> {
             ? Colors.orange
             : Colors.grey.withValues(alpha: 0.35);
 
-    return Stack(
+    final rowWidget = Stack(
       children: [
         Material(
           color: bg,
@@ -554,7 +562,7 @@ class _ChoreRowState extends State<_ChoreRow> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
-                        'Wacht op verificatie',
+                        'Checking',
                         style: TextStyle(
                             color: Colors.white, fontWeight: FontWeight.w700),
                       ),
@@ -615,13 +623,6 @@ class _ChoreRowState extends State<_ChoreRow> {
                           onPressed: () => _showEditDialog(context),
                           tooltip: 'Bewerk taak',
                         ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20),
-                          color: Colors.red[600],
-                          onPressed: () => _confirmAndDelete(context),
-                          tooltip: 'Verwijder taak',
-                        ),
                       ],
                     ),
                 ],
@@ -646,6 +647,63 @@ class _ChoreRowState extends State<_ChoreRow> {
               Theme.of(context).colorScheme.tertiary,
               Colors.lightBlue,
             ],
+          ),
+        ),
+      ],
+    );
+
+    // Kids cannot delete tasks — skip the swipe gesture entirely.
+    if (widget.isKidsMode) return rowWidget;
+
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        // Only render the red background while dragging. Rendering it always
+        // would bleed red through semi-transparent row backgrounds (done/pending).
+        if (_isDragging)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red[600],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(Icons.delete_forever, color: Colors.white, size: 28),
+            ),
+          ),
+        // HitTestBehavior.translucent lets the inner InkWell still receive taps
+        // while this GestureDetector handles the long-press + drag.
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onLongPressStart: (_) {
+            HapticFeedback.heavyImpact();
+            setState(() => _isDragging = true);
+          },
+          onLongPressMoveUpdate: (details) {
+            final dx = details.offsetFromOrigin.dx;
+            if (dx < 0) {
+              setState(() => _dragOffset = dx.clamp(-200.0, 0.0));
+            }
+          },
+          onLongPressEnd: (_) {
+            // 80 px threshold — enough to be intentional, not so far it feels broken.
+            final shouldDelete = _dragOffset < -80;
+            setState(() {
+              _dragOffset = 0;
+              _isDragging = false;
+            });
+            if (shouldDelete) _confirmAndDelete(context);
+          },
+          onLongPressCancel: () {
+            setState(() {
+              _dragOffset = 0;
+              _isDragging = false;
+            });
+          },
+          child: Transform.translate(
+            offset: Offset(_dragOffset, 0),
+            child: rowWidget,
           ),
         ),
       ],

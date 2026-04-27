@@ -79,8 +79,12 @@ class _RewardsPageState extends State<RewardsPage> {
   @override
   Widget build(BuildContext context) {
     final isKidsMode = _kidsModeNotifier.isKidsMode;
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
     return Scaffold(
-      appBar: const AppTopBar(),
+      appBar: AppTopBar(showMenuButton: isMobile),
+      drawer: isMobile
+          ? NavDrawer(current: LeftNavItem.rewards, isKidsMode: isKidsMode)
+          : null,
       floatingActionButton: (_familyId != null && !isKidsMode)
           ? FloatingActionButton(
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -94,10 +98,11 @@ class _RewardsPageState extends State<RewardsPage> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LeftNavPane(
-              current: LeftNavItem.rewards,
-              isKidsMode: isKidsMode,
-              userEmail: ''),
+          if (!isMobile)
+            LeftNavPane(
+                current: LeftNavItem.rewards,
+                isKidsMode: isKidsMode,
+                userEmail: ''),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())

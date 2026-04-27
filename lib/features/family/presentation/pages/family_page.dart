@@ -63,8 +63,26 @@ class _FamilyPageState extends State<FamilyPage> {
   @override
   Widget build(BuildContext context) {
     final isKidsMode = _kidsModeNotifier.isKidsMode;
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
+    Future<void> accountPressed() async {
+      await showDialog(
+        context: context,
+        builder: (_) => _EditProfileDialog(
+          onProfileUpdated: () =>
+              Navigator.of(context).pushReplacementNamed(RouteNames.family),
+        ),
+      );
+    }
     return Scaffold(
-      appBar: const AppTopBar(),
+      appBar: AppTopBar(showMenuButton: isMobile),
+      drawer: isMobile
+          ? NavDrawer(
+              current: LeftNavItem.family,
+              isKidsMode: isKidsMode,
+              userEmail: _currentUser?.email ?? '',
+              onAccountPressed: accountPressed,
+            )
+          : null,
       floatingActionButton: isKidsMode
           ? null
           : FloatingActionButton(
@@ -91,20 +109,13 @@ class _FamilyPageState extends State<FamilyPage> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LeftNavPane(
-            current: LeftNavItem.family,
-            userEmail: _currentUser?.email ?? '',
-            isKidsMode: isKidsMode,
-            onAccountPressed: () async {
-              await showDialog(
-                context: context,
-                builder: (_) => _EditProfileDialog(
-                  onProfileUpdated: () => Navigator.of(context)
-                      .pushReplacementNamed(RouteNames.family),
-                ),
-              );
-            },
-          ),
+          if (!isMobile)
+            LeftNavPane(
+              current: LeftNavItem.family,
+              userEmail: _currentUser?.email ?? '',
+              isKidsMode: isKidsMode,
+              onAccountPressed: accountPressed,
+            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
