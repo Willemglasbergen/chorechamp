@@ -1,6 +1,7 @@
 import 'package:chorechamp2/core/utils/format.dart';
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
+import 'package:confetti/confetti.dart';
 // File picking is handled via a small cross-platform helper.
 // On web we use a native <input type="file"> to avoid plugin init issues.
 import 'package:chorechamp2/core/utils/image_picker_bytes.dart';
@@ -11,11 +12,8 @@ import 'package:chorechamp2/data/services/rewards_service.dart';
 import 'package:chorechamp2/data/services/auth_service.dart';
 import 'package:chorechamp2/data/models/child.dart';
 import 'package:chorechamp2/data/models/reward.dart';
-import 'package:chorechamp2/core/routes/app_routes.dart';
 import 'package:chorechamp2/core/utils/kids_mode_notifier.dart';
-import 'package:chorechamp2/theme.dart';
 import 'package:chorechamp2/core/utils/logger.dart';
-import 'package:chorechamp2/widgets/hidden_when_kids_mode.dart';
 import 'package:chorechamp2/widgets/left_nav_pane.dart';
 
 class RewardsPage extends StatefulWidget {
@@ -119,7 +117,7 @@ class _RewardsPageState extends State<RewardsPage> {
                             final isTwoCols = c.maxWidth >= 900;
                             return Wrap(
                               spacing: 24,
-                              runSpacing: 16,
+                              runSpacing: isTwoCols ? 16 : 36,
                               children: _children.map((child) {
                                 final width = isTwoCols
                                     ? (c.maxWidth - 24) / 2
@@ -244,6 +242,7 @@ class _RewardsPageState extends State<RewardsPage> {
                               }).toList(),
                             );
                           }),
+                          const SizedBox(height: 80),
                         ]),
                   ),
           ),
@@ -376,7 +375,7 @@ class _ChildRewardsPanel extends StatelessWidget {
         child: _FilterTabs(
             selectedIndex: selectedIndex, onChanged: onFilterChange),
       ),
-      const SizedBox(height: 8),
+      const SizedBox(height: 32),
       ...rewards.map(
         (r) => _RewardCard(
           reward: r,
@@ -430,17 +429,18 @@ class _FilterTabs extends StatelessWidget {
   }
 }
 
-class _RewardCard extends StatelessWidget {
-  const _RewardCard(
-      {required this.reward,
-      required this.child,
-      required this.onRequest,
-      required this.onCancel,
-      required this.onFulfill,
-      required this.onEdit,
-      required this.onDuplicate,
-      required this.peopleIcon,
-      required this.isKidsMode});
+class _RewardCard extends StatefulWidget {
+  const _RewardCard({
+    required this.reward,
+    required this.child,
+    required this.onRequest,
+    required this.onCancel,
+    required this.onFulfill,
+    required this.onEdit,
+    required this.onDuplicate,
+    required this.peopleIcon,
+    required this.isKidsMode,
+  });
   final RewardModel reward;
   final ChildModel child;
   final ValueChanged<RewardModel> onRequest;
@@ -452,19 +452,38 @@ class _RewardCard extends StatelessWidget {
   final bool isKidsMode;
 
   @override
+  State<_RewardCard> createState() => _RewardCardState();
+}
+
+class _RewardCardState extends State<_RewardCard> {
+  late final ConfettiController _confetti;
+
+  @override
+  void initState() {
+    super.initState();
+    _confetti =
+        ConfettiController(duration: const Duration(milliseconds: 1500));
+  }
+
+  @override
+  void dispose() {
+    _confetti.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final reward = widget.reward;
+    final child = widget.child;
     final status = reward.statusByChild[child.id] ?? 'open';
     final isOpen = status == 'open';
     final isCommitted = status == 'committed';
     final isPending = status == 'pending';
-    final isFulfilled = status == 'fulfilled';
+    final canEdit = !widget.isKidsMode;
+    final primary = Theme.of(context).colorScheme.primary;
+    final tertiary = Theme.of(context).colorScheme.tertiary;
+    final secondary = Theme.of(context).colorScheme.secondary;
 
-    // Allow editing whenever we're not in kids mode.
-    // Previously this was disabled when any child had pending/fulfilled,
-    // but that prevented parents from fixing typos or updating details.
-    final canEdit = !isKidsMode;
-
-    // Calculate progress for combo rewards
     String? progressText;
     if (reward.isCombo && (isOpen || isCommitted)) {
       final totalChildren = reward.statusByChild.length;
@@ -477,153 +496,290 @@ class _RewardCard extends StatelessWidget {
       }
     }
 
-    return Container(
-      margin: EdgeInsets.only(left: 0, top: 0, right: 0, bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.35)),
-        color: Colors.white,
-      ),
-      child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              _RewardImage(imageUrl: reward.imageUrl),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Row(
+    return Stack(
+      alignment: Alignment.topCenter,
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 44),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: 0.10),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _RewardCardImage(imageUrl: reward.imageUrl),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Text(
                               reward.title,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 22,
+                                fontSize: 20,
+                                height: 1.25,
                               ),
-                              textAlign: TextAlign.left,
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          if (reward.isCombo) ...[
+                            const SizedBox(width: 6),
+                            widget.peopleIcon,
+                          ],
+                          if (canEdit) ...[
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 18),
+                              color: Colors.grey[500],
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Bewerk beloning',
+                              onPressed: () => widget.onEdit(reward),
+                            ),
+                            const SizedBox(width: 2),
+                            IconButton(
+                              icon: const Icon(Icons.copy_outlined, size: 18),
+                              color: Colors.grey[500],
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Dupliceer beloning',
+                              onPressed: () => widget.onDuplicate(reward),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: tertiary.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: tertiary.withValues(alpha: 0.45)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.star_rounded, size: 16, color: tertiary),
+                            const SizedBox(width: 5),
+                            Text(
+                              '${reward.points} punten',
+                              style: const TextStyle(
+                                color: Color(0xFF7A5500),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (progressText != null) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 7, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
                             children: [
-                              Text(
-                                '${reward.points}\u0020points',
+                              Icon(Icons.info_outline,
+                                  size: 14, color: Colors.orange[700]),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  progressText,
+                                  style: TextStyle(
+                                    color: Colors.orange[700],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      if (isOpen)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (widget.isKidsMode &&
+                                  child.balance >= reward.points) {
+                                _confetti.play();
+                              }
+                              widget.onRequest(reward);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primary,
+                              foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 3,
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('\u{1F389}',
+                                    style: TextStyle(fontSize: 16)),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Aanvragen!',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (isCommitted)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('⏳', style: TextStyle(fontSize: 16)),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Wachten op broer of zus...',
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => widget.onCancel(reward),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(Icons.close,
+                                      size: 18, color: Colors.black38),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (isPending)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: secondary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: secondary.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.hourglass_top_rounded,
+                                  size: 16, color: secondary),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Beloning aangevraagd!',
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: Color(0xFF003826),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(width: 8),
-                          if (reward.isCombo) peopleIcon,
-                          if (canEdit) ...[
-                            const SizedBox(width: 6),
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 20),
-                              color: Colors.grey[700],
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(),
-                              tooltip: 'Bewerk beloning',
-                              onPressed: () => onEdit(reward),
-                            ),
-                            const SizedBox(width: 6),
-                            IconButton(
-                              icon: const Icon(Icons.copy_outlined, size: 20),
-                              color: Colors.grey[700],
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(),
-                              tooltip: 'Dupliceer beloning',
-                              onPressed: () => onDuplicate(reward),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-        if (progressText != null)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: Colors.orange.withValues(alpha: 0.1),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.orange[700]),
-                const SizedBox(width: 6),
-                Text(
-                  progressText,
-                  style: TextStyle(
-                    color: Colors.orange[700],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        if (isCommitted)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            color: Colors.grey[300],
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'Wachten op broer of zus',
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: InkWell(
-                    onTap: () => onCancel(reward),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      child: const Icon(Icons.close,
-                          size: 18, color: Colors.black54),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        if (isPending)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            color:
-                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
-            child: const Center(
-              child: Text(
-                'Beloning aangevraagd',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        if (!isOpen && !isCommitted && !isPending) const SizedBox(height: 8),
-      ]),
+        ConfettiWidget(
+          confettiController: _confetti,
+          blastDirectionality: BlastDirectionality.explosive,
+          numberOfParticles: 30,
+          maxBlastForce: 30,
+          minBlastForce: 12,
+          emissionFrequency: 0.04,
+          gravity: 0.35,
+          colors: const [
+            Color(0xFF2B7DE1),
+            Color(0xFF5FD4A8),
+            Color(0xFFFDB748),
+            Color(0xFFFF6B6B),
+            Color(0xFFFF9FF3),
+            Color(0xFFFFFFFF),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _RewardCardImage extends StatelessWidget {
+  const _RewardCardImage({required this.imageUrl});
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final placeholder = Container(
+      height: 160,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer,
+            primary.withValues(alpha: 0.15),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Icon(
+        Icons.card_giftcard_rounded,
+        color: primary.withValues(alpha: 0.35),
+        size: 64,
+      ),
+    );
+    if (imageUrl == null || imageUrl!.isEmpty) return placeholder;
+    return Image.network(
+      imageUrl!,
+      height: 160,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (_, __, ___) => placeholder,
     );
   }
 }
@@ -658,14 +814,6 @@ class _RewardImage extends StatelessWidget {
       ),
     );
   }
-}
-
-extension on Widget {
-  Widget _asButton({required bool enabled, required VoidCallback onTap}) =>
-      InkWell(
-        onTap: enabled ? onTap : null,
-        child: this,
-      );
 }
 
 class _PointsBadge extends StatelessWidget {
@@ -703,21 +851,18 @@ class _AddRewardDialog extends StatefulWidget {
 }
 
 class _AddRewardDialogState extends State<_AddRewardDialog> {
-  // Colors now use theme
-
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _pointsCtrl = TextEditingController();
 
-  // UI state
   String _status = 'open';
   bool _isCombo = false;
   late Set<String> _selectedChildren;
-  Uint8List? _imageBytes; // resized 200x200 preview/upload bytes
+  Uint8List? _imageBytes;
   String? _existingImageUrl;
   bool _isUploadingImage = false;
   late final String _draftRewardId;
-  String? _imageStatusText; // inline feedback within dialog
+  String? _imageStatusText;
   Color _imageStatusColor = Colors.black54;
 
   @override
@@ -731,8 +876,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
       _isCombo = editing.isCombo;
       _selectedChildren = editing.statusByChild.keys.toSet();
       _existingImageUrl = editing.imageUrl;
-      // For editing, set status to a safe default when map is empty
-      // If there are statuses, use the first (typically uniform for open/committed)
       _status = editing.statusByChild.values.isNotEmpty
           ? editing.statusByChild.values.first
           : 'open';
@@ -786,13 +929,11 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
                   style: const TextStyle(color: Colors.black54)),
               const SizedBox(height: 16),
 
-              // Image picker & preview
               _ImagePickerRow(
                 imageBytes: _imageBytes,
                 imageUrl: _existingImageUrl,
                 onPick: _onPickImage,
                 onClear: () async {
-                  // If an image exists in storage for this draft, delete it
                   try {
                     final svc = RewardsService();
                     await svc.deleteRewardImage(
@@ -815,7 +956,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Status dropdown
               DropdownButtonFormField<String>(
                 initialValue: _status,
                 items: const [
@@ -829,14 +969,12 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
               ),
               const SizedBox(height: 10),
 
-              // Name
               TextField(
                 controller: _titleCtrl,
                 decoration: _inputDecoration('Naam'),
               ),
               const SizedBox(height: 10),
 
-              // Description
               TextField(
                 controller: _descCtrl,
                 minLines: 2,
@@ -845,7 +983,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
               ),
               const SizedBox(height: 10),
 
-              // Points
               TextField(
                 controller: _pointsCtrl,
                 keyboardType: TextInputType.number,
@@ -853,7 +990,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
               ),
               const SizedBox(height: 14),
 
-              // Combo switch
               Row(
                 children: [
                   const Expanded(
@@ -880,7 +1016,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
               ),
               const SizedBox(height: 10),
 
-              // Children selector
               const Text('Beloning voor kinderen:'),
               const SizedBox(height: 6),
               Wrap(
@@ -912,7 +1047,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
 
               const SizedBox(height: 18),
 
-              // Actions
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -971,15 +1105,12 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
     final now = DateTime.now();
     final points = int.tryParse(_pointsCtrl.text.trim()) ?? 0;
     final sel = _selectedChildren;
-    if (sel.isEmpty) return; // must select at least one
+    if (sel.isEmpty) return;
 
-    // When editing, apply the status to all selected children
-    // When creating, use 'open' for all children
     final map = {
       for (final childId in sel) childId: editing != null ? _status : 'open'
     };
 
-    // Use existing uploaded image if present; otherwise upload now if bytes exist
     String? imageUrl = _existingImageUrl;
     if (imageUrl == null && _imageBytes != null) {
       try {
@@ -996,7 +1127,7 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
           setState(() {});
         }
       } catch (e) {
-        if (context.mounted) {
+        if (mounted) {
           _imageStatusText = 'Upload mislukt: $e';
           _imageStatusColor = Colors.red[700]!;
           setState(() {});
@@ -1023,7 +1154,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
   }
 
   Future<void> _onPickImage() async {
-    // Add verbose logging to diagnose web issues
     AppLogger.d('Image pick started');
     if (mounted) {
       setState(() {
@@ -1042,8 +1172,8 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
       return;
     }
     final data = picked.bytes;
-    final size = data.length; // in bytes
-    const max = 10 * 1024 * 1024; // 10 MB
+    final size = data.length;
+    const max = 10 * 1024 * 1024;
     if (size > max) {
       if (mounted) {
         _imageStatusText = 'Bestand is groter dan 10 MB.';
@@ -1052,7 +1182,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
       }
       return;
     }
-    // Decode, center-crop to square, and resize to 200x200
     try {
       AppLogger.d(
           'Picked image: name=${picked.fileName} mime=${picked.mimeType} bytes=$size');
@@ -1075,7 +1204,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
         _imageStatusText = 'Voorbeeld klaar. Start upload…';
         _imageStatusColor = Colors.black54;
       });
-      // Immediately upload so that the image is persisted and previewed reliably
       setState(() {
         _isUploadingImage = true;
       });
@@ -1090,8 +1218,6 @@ class _AddRewardDialogState extends State<_AddRewardDialog> {
         if (!mounted) return;
         setState(() {
           _existingImageUrl = url;
-          // Keep local preview to ensure it's visible regardless of CORS/rendering
-          // issues with web network images. The URL will be persisted on save.
           _imageStatusText = 'Afbeelding geüpload. Voorbeeld bijgewerkt.';
           _imageStatusColor = Colors.green[700]!;
         });
@@ -1176,7 +1302,7 @@ class _ImagePickerRow extends StatelessWidget {
               ),
             if (statusText != null) const SizedBox(height: 8),
             Text(
-              '200 × 200 px, JPG/PNG, max 10 MB',
+              '200 x 200 px, JPG/PNG, max 10 MB',
               style: const TextStyle(fontSize: 12, color: Colors.black54),
             ),
             const SizedBox(height: 8),
@@ -1197,7 +1323,6 @@ class _ImagePickerRow extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Switch to column layout on narrow dialog widths to avoid overflow
         if (constraints.maxWidth < 460) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1217,30 +1342,6 @@ class _ImagePickerRow extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _DeleteButton extends StatelessWidget {
-  const _DeleteButton({required this.enabled, required this.onTap});
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFFFE6E1),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Builder(
-              builder: (context) => Icon(Icons.delete,
-                  color: Theme.of(context).colorScheme.primary)),
-        ),
-      ),
     );
   }
 }

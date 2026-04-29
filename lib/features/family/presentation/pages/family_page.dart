@@ -200,6 +200,7 @@ class _FamilyPageState extends State<FamilyPage> {
                                 },
                               ),
                             )),
+                        const SizedBox(height: 80),
                       ],
                     ),
                   ),

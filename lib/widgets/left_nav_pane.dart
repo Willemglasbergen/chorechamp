@@ -264,16 +264,19 @@ class _NavItemRow extends StatelessWidget {
                       child: child,
                     ),
                   ),
-                  child: Text(
-                    label,
+                  child: Align(
                     key: ValueKey<String>(label),
-                    style: const TextStyle(
-                      color: LightModeColors.lightOnPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: LightModeColors.lightOnPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
                   ),
                 ),
               ),

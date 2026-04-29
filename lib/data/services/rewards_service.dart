@@ -195,20 +195,16 @@ class RewardsService {
         throw Exception('Sorry, maar je hebt nog niet genoeg punten.');
       }
       // Deduct points via ledger entry
-      try {
-        final uid = _authService.currentUser?.uid ?? '';
-        await _ledgerService.addTransaction(
-          childId: childId,
-          familyId: reward.familyId,
-          amount: -childShare,
-          type: LedgerEntryType.rewardRequest,
-          createdByUserId: uid,
-          note: 'Beloning aangevraagd (combo): ${reward.title}',
-          relatedId: reward.id,
-        );
-      } catch (e) {
-        debugPrint('Failed to add combo reward ledger entry: $e');
-      }
+      final uid = _authService.currentUser?.uid ?? '';
+      await _ledgerService.addTransaction(
+        childId: childId,
+        familyId: reward.familyId,
+        amount: -childShare,
+        type: LedgerEntryType.rewardRequest,
+        createdByUserId: uid,
+        note: 'Beloning aangevraagd (combo): ${reward.title}',
+        relatedId: reward.id,
+      );
 
       // Mark this child as committed
       final map = Map<String, String>.from(reward.statusByChild);
@@ -244,20 +240,16 @@ class RewardsService {
         throw Exception('Sorry, maar je hebt nog niet genoeg punten.');
       }
       // Deduct points via ledger entry
-      try {
-        final uid = _authService.currentUser?.uid ?? '';
-        await _ledgerService.addTransaction(
-          childId: childId,
-          familyId: reward.familyId,
-          amount: -reward.points,
-          type: LedgerEntryType.rewardRequest,
-          createdByUserId: uid,
-          note: 'Beloning aangevraagd: ${reward.title}',
-          relatedId: reward.id,
-        );
-      } catch (e) {
-        debugPrint('Failed to add reward ledger entry: $e');
-      }
+      final uid = _authService.currentUser?.uid ?? '';
+      await _ledgerService.addTransaction(
+        childId: childId,
+        familyId: reward.familyId,
+        amount: -reward.points,
+        type: LedgerEntryType.rewardRequest,
+        createdByUserId: uid,
+        note: 'Beloning aangevraagd: ${reward.title}',
+        relatedId: reward.id,
+      );
 
       final map = Map<String, String>.from(reward.statusByChild);
       map[childId] = 'pending';

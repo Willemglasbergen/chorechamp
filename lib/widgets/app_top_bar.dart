@@ -42,9 +42,9 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                   onPressed: () => Scaffold.of(ctx).openDrawer(),
                 ),
               ),
-            _Logo(accent: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            const _BrandTitle(),
+            if (!showMenuButton) _Logo(accent: Theme.of(context).colorScheme.primary),
+            if (!showMenuButton) const SizedBox(width: 8),
+            if (!showMenuButton) const _BrandTitle(),
             const Spacer(),
             Padding(padding: const EdgeInsets.all(8), child: const _KidsModeToggle()),
             Padding(

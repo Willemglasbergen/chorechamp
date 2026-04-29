@@ -166,7 +166,7 @@ class _ChoresPageState extends State<ChoresPage> {
                             return Wrap(
                               alignment: WrapAlignment.start,
                               spacing: 24,
-                              runSpacing: 16,
+                              runSpacing: isTwoCols ? 16 : 36,
                               children: children.map((child) {
                                 final childChores = _chores
                                     .where((e) => e.childIds.contains(child.id))
@@ -188,7 +188,8 @@ class _ChoresPageState extends State<ChoresPage> {
                               }).toList(),
                             );
                           },
-                        )
+                        ),
+                        const SizedBox(height: 80),
                       ],
                     ),
                   ),
@@ -457,49 +458,52 @@ class _ChoreRowState extends State<_ChoreRow> {
           borderRadius: BorderRadius.circular(4),
           child: InkWell(
             borderRadius: BorderRadius.circular(4),
-            onTap: (!isToday || isDone)
-                ? null
-                : () async {
-                    try {
-                      final result = await widget.onToggle();
-                      switch (result) {
-                        case ChoreToggleResult.completed:
-                          _confettiController.play();
-                          await Future.delayed(
-                            const Duration(milliseconds: 1300),
-                          );
-                          if (mounted) widget.onChanged();
-                        case ChoreToggleResult.pendingVerification:
-                        case ChoreToggleResult.uncompleted:
-                          widget.onChanged();
-                        case ChoreToggleResult.blockedByDeadline:
+            onTap: widget.isKidsMode
+                ? ((!isToday || isDone)
+                    ? null
+                    : () async {
+                        try {
+                          final result = await widget.onToggle();
+                          switch (result) {
+                            case ChoreToggleResult.completed:
+                              _confettiController.play();
+                              await Future.delayed(
+                                const Duration(milliseconds: 1300),
+                              );
+                              if (mounted) widget.onChanged();
+                            case ChoreToggleResult.pendingVerification:
+                            case ChoreToggleResult.uncompleted:
+                              widget.onChanged();
+                            case ChoreToggleResult.blockedByDeadline:
+                              if (context.mounted) {
+                                await showDialog(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Te laat'),
+                                    content: const Text(
+                                        'Sorry, maar deze taak had je eerder af moeten maken. Je krijgt geen punten meer.'),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('Oké')),
+                                    ],
+                                  ),
+                                );
+                              }
+                            case ChoreToggleResult.blockedByDate:
+                            case ChoreToggleResult.notFound:
+                              break;
+                          }
+                        } catch (e) {
                           if (context.mounted) {
-                            await showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text('Te laat'),
-                                content: const Text(
-                                    'Sorry, maar deze taak had je eerder af moeten maken. Je krijgt geen punten meer.'),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Oké')),
-                                ],
-                              ),
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Fout: $e')),
                             );
                           }
-                        case ChoreToggleResult.blockedByDate:
-                        case ChoreToggleResult.notFound:
-                          break;
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Fout: $e')),
-                        );
-                      }
-                    }
-                  },
+                        }
+                      })
+                : () => _showEditDialog(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -578,53 +582,48 @@ class _ChoreRowState extends State<_ChoreRow> {
                               : Colors.grey[400]),
                     ),
                   ),
-                  SizedBox(
-                    width: 80,
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: (canToggle || isPending)
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey[300],
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
-                      '${widget.chore.points} punten',
-                      textAlign: TextAlign.right,
+                      '${widget.chore.points}',
                       style: TextStyle(
                         color: (canToggle || isPending)
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey[400],
+                            ? Colors.white
+                            : Colors.grey[500],
                         fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  if (!widget.isKidsMode)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isPending) ...[
-                          IconButton(
-                            icon: const Icon(Icons.check_circle_outline,
-                                size: 22),
-                            color: Colors.green[700],
-                            onPressed: () async {
-                              await widget.onApprove();
-                              widget.onChanged();
-                            },
-                            tooltip: 'Goedkeuren',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.cancel_outlined, size: 22),
-                            color: Colors.red[600],
-                            onPressed: () async {
-                              await widget.onReject();
-                              widget.onChanged();
-                            },
-                            tooltip: 'Afwijzen',
-                          ),
-                        ],
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 20),
-                          color: Colors.grey[600],
-                          onPressed: () => _showEditDialog(context),
-                          tooltip: 'Bewerk taak',
-                        ),
-                      ],
+                  if (!widget.isKidsMode && isPending) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.check_circle_outline, size: 22),
+                      color: Colors.green[700],
+                      onPressed: () async {
+                        await widget.onApprove();
+                        widget.onChanged();
+                      },
+                      tooltip: 'Goedkeuren',
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.cancel_outlined, size: 22),
+                      color: Colors.red[600],
+                      onPressed: () async {
+                        await widget.onReject();
+                        widget.onChanged();
+                      },
+                      tooltip: 'Afwijzen',
+                    ),
+                  ],
                 ],
               ),
             ),
