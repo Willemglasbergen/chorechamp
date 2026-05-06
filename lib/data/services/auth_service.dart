@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:chorechamp2/data/models/app_user.dart';
 
 class AuthService {
@@ -20,6 +21,9 @@ class AuthService {
       final doc = await _firestore.collection('users').doc(credential.user!.uid).get();
       if (!doc.exists) return null;
       
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_active_time', DateTime.now().toIso8601String());
+
       return AppUser.fromJson({'id': doc.id, ...doc.data()!});
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -48,6 +52,10 @@ class AuthService {
       );
 
       await _firestore.collection('users').doc(user.id).set(user.toJson());
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_active_time', DateTime.now().toIso8601String());
+
       return user;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -76,6 +84,8 @@ class AuthService {
 
   Future<void> signOut() async {
     await _auth.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_active_time');
   }
 
   String _handleAuthException(FirebaseAuthException e) {

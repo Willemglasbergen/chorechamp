@@ -13,6 +13,11 @@ Project platform defaults:
 - Monitoring: Sentry
 - Code backup/version control: GitHub
 
+Project-specific context:
+- Read `/context/` before making product, architecture, Firebase, email, environment, security-rule, or workflow assumptions.
+- Treat `/context/` as the source of truth for this app.
+- If `/context/` conflicts with external memory or inferred assumptions, `/context/` wins.
+
 Environment model:
 - There are two Firebase projects:
   - test/development
@@ -26,7 +31,7 @@ Rules:
 - Prefer incremental, production-safe changes.
 - Avoid replacing working infrastructure unless explicitly requested.
 
-Firebase Sendgrid mail extension rules:
+Firebase SendGrid mail extension rules:
 - Use the Firebase mail extension for outbound email.
 - Prefer the existing configured mails collection, trigger structure, and template approach if present.
 - Do not propose direct SMTP secrets in client code.

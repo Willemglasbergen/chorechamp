@@ -1,5 +1,45 @@
 # Project instructions
 
+## Project context source of truth
+
+Before making architectural, product, Firebase, email, data-model, security-rule, or feature decisions, read the files in `/context/`.
+
+The `/context/` folder is the source of truth for this specific app.
+
+Use:
+- `/context/project_overview.md` for product purpose and scope
+- `/context/architecture.md` for technical architecture
+- `/context/firebase_model.md` for Firestore/Realtime Database, Storage, indexes, rules, and Firebase services
+- `/context/user_roles.md` for users, permissions, and role logic
+- `/context/feature_flows.md` for business flows
+- `/context/email_flows.md` for Firebase SendGrid mail extension flows
+- `/context/environments.md` for test/development and production Firebase configuration strategy
+- `/context/decisions.md` for prior architectural decisions
+
+Do not rely on external Claude memory as the authoritative project context.
+
+If external memory conflicts with files in `/context/`, the `/context/` files win.
+
+## Firebase source of truth
+
+For Firebase-specific work, read the actual Firebase configuration files directly:
+
+- `firebase.json`
+- `.firebaserc`
+- `firestore.rules`
+- `firestore.indexes.json`
+- `storage.rules`
+- `functions/`
+- `lib/firebase_options.dart`
+
+Do not rely only on `/context/firebase_model.md`.
+
+Use `/context/firebase_model.md` only as an index, summary, or explanation layer.
+
+If `/context/firebase_model.md` conflicts with actual Firebase configuration files, the actual Firebase files win.
+
+## General project rules
+
 This is an existing Flutter application that already uses Firebase.
 
 Non-negotiable:
@@ -28,7 +68,7 @@ Environment setup:
 - When proposing backend changes, assume they should be applied to both environments unless explicitly requested otherwise.
 
 Platform defaults:
-- Use the Firebase Sendgrid mail extension for sending emails.
+- Use the Firebase SendGrid mail extension for sending emails.
 - Use Firebase for hosting the app where hosting is relevant.
 - Use Sentry for monitoring and error tracking.
 - Use GitHub for code backup and version control.

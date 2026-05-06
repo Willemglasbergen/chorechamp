@@ -11,6 +11,11 @@ Core rules:
 - If a request is ambiguous, assume the user wants a Flutter implementation.
 - The app must support the platforms already present in the project unless explicitly stated otherwise.
 
+Project-specific context:
+- The app-specific source of truth lives in `/context/`.
+- Read `/context/` before making product, architecture, database, role, Firebase, email, or workflow assumptions.
+- If `/context/` conflicts with external memory, Claude memory, or inferred assumptions, `/context/` wins.
+
 Existing-project rules:
 - Treat this as an imported, existing codebase.
 - Respect the current architecture, folder structure, coding patterns, and package choices unless there is a strong reason to improve them.
@@ -19,24 +24,10 @@ Existing-project rules:
 - Before adding a new pattern, first align with what the project already does.
 - Preserve backward compatibility where practical.
 
-Code quality and cleanup (important for generated codebases):
-- This project may contain generated code from Flutterflow with:
-  - dead or unused code
-  - duplicate imports
-  - redundant widgets or logic
-  - suboptimal patterns
-
-- You are allowed and expected to:
-  - remove unused imports and dead code
-  - fix obvious bugs
-  - simplify redundant or duplicated logic
-  - improve readability where safe
-
-- You must NOT:
-  - perform large architectural rewrites unless explicitly requested
-  - change working behavior unnecessarily
-  - introduce breaking changes without clear reason
-
+Code quality and cleanup:
+- This project may contain generated code from FlutterFlow with dead code, duplicate imports, redundant widgets, or suboptimal patterns.
+- You are allowed and expected to remove unused imports, remove dead code, fix obvious bugs, simplify duplicated logic, and improve readability where safe.
+- Do not perform large architectural rewrites unless explicitly requested.
 - Prefer incremental, safe improvements that increase code quality over time.
 
 Architecture defaults:
@@ -60,7 +51,6 @@ Backend defaults:
 - Prefer official FlutterFire packages for Firebase integration.
 - Prefer Firebase Auth for authentication if the existing app already uses it.
 - Prefer Firestore or Realtime Database patterns already present in the project rather than introducing a second backend.
-- Prefer Firebase Storage, Cloud Functions, Messaging, Analytics, Remote Config, and other Firebase services only when relevant to the existing app requirements.
 - Do not introduce another backend such as Supabase unless explicitly requested.
 
 Environment defaults:
@@ -75,10 +65,10 @@ Environment defaults:
 - Do not create unnecessary drift between test/development and production.
 
 Email defaults:
-- Use the Firebase Sendgrid mail extension for sending emails.
+- Use the Firebase SendGrid mail extension for sending emails.
 - Prefer the existing Firebase extension setup if it is already present.
-- Do not send email directly from client-side Flutter code through SMTP providers or third-party mail SDKs.
-- Trigger email sending through the Firebase Sendgrid mail extension's expected data flow.
+- Do not send email directly from client-side Flutter code.
+- Trigger email sending through the Firebase SendGrid mail extension's expected data flow.
 - Keep email-trigger logic, payload shape, and collection writes aligned with the extension configuration already used by the project.
 - Keep secrets and privileged mail configuration out of client code.
 
@@ -112,7 +102,7 @@ Date and localization:
 - Use intl for date, time, number, and localization formatting.
 
 Dependency policy:
-- Prefer well-maintained and widely adopted packages from pub.dev instead of custom implementations for common functionality.
+- Prefer well-maintained and widely adopted packages from pub.dev.
 - Avoid outdated, obscure, or weakly maintained packages.
 - Do not reinvent common functionality without a good reason.
 - Prefer packages that are compatible with the platforms already targeted by the project.
@@ -122,10 +112,8 @@ Responsive defaults:
 - Build mobile-first, but scale cleanly to tablet and desktop where relevant.
 - Use a primary breakpoint based on screen width.
 - Do not rely solely on orientation for layout decisions.
-- Orientation may be used as a secondary signal to refine layouts.
 - Prefer responsive patterns such as Expanded, Flexible, Wrap, LayoutBuilder, MediaQuery, and ConstrainedBox.
 - On web and desktop, avoid stretching content edge-to-edge; prefer centered layouts with sensible max widths.
-- Consider mouse, keyboard, focus, and hover interactions where relevant.
 
 Firebase-specific guidance:
 - Keep secrets and privileged operations out of client code.

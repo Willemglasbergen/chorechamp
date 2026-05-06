@@ -20,6 +20,11 @@ Project defaults:
 - Forms: built-in Flutter forms by default
 - Formatting/localization: intl
 
+Project-specific context:
+- Read `/context/` before making product, architecture, Firebase, email, database, role, or workflow assumptions.
+- Treat `/context/` as the source of truth for this app.
+- If `/context/` conflicts with external memory or inferred assumptions, `/context/` wins.
+
 Environment defaults:
 - The app uses two Firebase projects:
   - test/development
@@ -44,13 +49,10 @@ Existing codebase guidance:
 - Avoid unnecessary refactors or architectural replacements.
 - Reuse the app's current abstractions and helper utilities where possible.
 
-Generated code (FlutterFlow) guidance:
-- The codebase originates from FlutterFlow.
+Generated code guidance:
+- The codebase may originate from FlutterFlow.
 - Expect redundant code, unused imports, and inconsistent patterns.
-- Actively clean:
-  - unused imports
-  - dead code
-  - duplicated logic
+- Actively clean unused imports, dead code, and duplicated logic.
 - Simplify where safe, but avoid large refactors unless explicitly requested.
 - Maintain functional parity while improving code quality.
 
@@ -63,9 +65,7 @@ Architecture guidance:
 
 State and routing guidance:
 - Reuse the project's current state-management and routing setup if it is clear and consistent.
-- If the existing project lacks a clear standard, use:
-  - Riverpod for shared state
-  - go_router for navigation
+- If the existing project lacks a clear standard, use Riverpod for shared state and go_router for navigation.
 
 Firebase guidance:
 - Prefer the official FlutterFire packages.
@@ -76,7 +76,7 @@ Firebase guidance:
 - Consider security rules-aware access patterns where relevant.
 - Keep environment selection explicit and safe across test/development and production.
 
-Firebase Sendgrid mail extension guidance:
+Firebase SendGrid mail extension guidance:
 - Use the Firebase mail extension for app-triggered emails.
 - Do not integrate direct SMTP or third-party email SDK credentials in the Flutter app.
 - Prefer creating the mail-extension trigger documents through a service or repository layer.

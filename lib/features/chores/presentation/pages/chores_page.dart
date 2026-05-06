@@ -310,22 +310,19 @@ class _ChildPanel extends StatelessWidget {
             _PointsBadge(points: child.balance),
           ],
         ),
-        ...chores
-            .map((c) => _ChoreRow(
-                  chore: c,
-                  childId: child.id,
-                  selectedDate: selectedDate,
-                  onToggle: () => service.toggleChoreWithRules(
-                      c.id, child.id, DateTime.now()),
-                  onApprove: () =>
-                      service.approveChore(c.id, child.id, selectedDate),
-                  onReject: () =>
-                      service.rejectChore(c.id, child.id, selectedDate),
-                  onChanged: onChanged,
-                  allChildren: allChildren,
-                  isKidsMode: isKidsMode,
-                ))
-            .toList(),
+        ...chores.map((c) => _ChoreRow(
+              chore: c,
+              childId: child.id,
+              selectedDate: selectedDate,
+              onToggle: () =>
+                  service.toggleChoreWithRules(c.id, child.id, DateTime.now()),
+              onApprove: () =>
+                  service.approveChore(c.id, child.id, selectedDate),
+              onReject: () => service.rejectChore(c.id, child.id, selectedDate),
+              onChanged: onChanged,
+              allChildren: allChildren,
+              isKidsMode: isKidsMode,
+            )),
       ],
     );
   }
@@ -668,7 +665,8 @@ class _ChoreRowState extends State<_ChoreRow> {
               ),
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete_forever, color: Colors.white, size: 28),
+              child: const Icon(Icons.delete_forever,
+                  color: Colors.white, size: 28),
             ),
           ),
         // HitTestBehavior.translucent lets the inner InkWell still receive taps
